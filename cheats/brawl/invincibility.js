@@ -1,69 +1,168 @@
 /**
- * @license AGPL-3.0
- * Blooket Cheats
- * Copyright (C) 2023-present 05Konz
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published
- * by the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- * 
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- * 
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- * 
- * Source: https://github.com/Blooket-Council/Blooket-Cheats 05konz994@gmail.com
-*/
-
-/* THE UPDATE CHECKER IS ADDED DURING COMMIT PREP, THERE MAY BE REDUNDANT CODE, DO NOT TOUCH */
+ * Direct Phaser Object Access - Registry Method
+ */
 
 (() => {
-    let iframe = document.querySelector("iframe");
-    if (!iframe) {
-        iframe = document.createElement("iframe");
-        iframe.style.display = "none";
-        document.body.append(iframe);
+    console.clear();
+    console.log("🎯 DIRECT OBJECT ACCESS\n");
+    
+    if (!window.Phaser) {
+        alert("Phaser not found!");
+        return;
     }
-    /* By CryptoDude3 */
-    if (window.fetch.call.toString() == 'function call() { [native code] }') {
-        const call = window.fetch.call;
-        window.fetch.call = function () {
-            if (!arguments[1].includes("s.blooket.com/rc")) return call.apply(this, arguments);
+    
+    // Strategy: Access Phaser's internal DisplayList
+    // Every Phaser game stores all objects in a registry
+    
+    console.log("Attempting deep Phaser access...\n");
+    
+    // Method 1: Find canvas and extract WebGL context
+    const canvas = document.querySelector('#phaser-game canvas');
+    if (!canvas) {
+        alert("Canvas not found!");
+        return;
+    }
+    
+    console.log("✓ Canvas found");
+    
+    // Try to find the Phaser game through the canvas's contexts
+    const gl = canvas.getContext('webgl') || canvas.getContext('webgl2');
+    const ctx2d = canvas.getContext('2d');
+    
+    console.log("WebGL context:", gl ? "✓" : "✗");
+    console.log("2D context:", ctx2d ? "✓" : "✗");
+    
+    // Method 2: Hook into Phaser GameObject updates
+    console.log("\n=== HOOKING GAMEOBJECT ===");
+    
+    // Intercept Phaser.GameObjects.Sprite update
+    if (window.Phaser.GameObjects?.Sprite) {
+        const originalUpdate = window.Phaser.GameObjects.Sprite.prototype.preUpdate;
+        
+        window.Phaser.GameObjects.Sprite.prototype.preUpdate = function(time, delta) {
+            // Store reference to player sprite
+            if (!window._sprites) window._sprites = new Set();
+            window._sprites.add(this);
+            
+            // Look for player-specific properties
+            if (this.texture?.key?.includes('player') || 
+                this.texture?.key?.includes('blook') ||
+                this.name?.includes('player')) {
+                
+                if (!window._player) {
+                    console.log("✓✓✓ FOUND PLAYER SPRITE!");
+                    console.log("  Texture:", this.texture.key);
+                    console.log("  Name:", this.name);
+                    console.log("  Keys:", Object.keys(this));
+                    
+                    window._player = this;
+                    
+                    // Make player invincible
+                    if (this.setData) {
+                        this.setData('invulnerable', true);
+                        this.setData('invulnerableTime', Infinity);
+                        this.setData('dmgCd', Infinity);
+                        console.log("✓ Set invulnerability data");
+                    }
+                }
+            }
+            
+            return originalUpdate?.apply(this, arguments);
+        };
+        
+        console.log("✓ Sprite.preUpdate hooked");
+    }
+    
+    // Method 3: Hook Physics Bodies
+    if (window.Phaser.Physics?.Arcade?.Body) {
+        const originalUpdate = window.Phaser.Physics.Arcade.Body.prototype.preUpdate;
+        
+        window.Phaser.Physics.Arcade.Body.prototype.preUpdate = function() {
+            if (!window._bodies) window._bodies = new Set();
+            window._bodies.add(this);
+            
+            // Check if this is the player body
+            if (this.gameObject?.texture?.key?.includes('player') ||
+                this.gameObject?.texture?.key?.includes('blook')) {
+                
+                if (!window._playerBody) {
+                    console.log("✓✓✓ FOUND PLAYER PHYSICS BODY!");
+                    window._playerBody = this;
+                    
+                    // Disable collision callbacks
+                    this.onCollide = false;
+                    this.onWorldBounds = false;
+                    
+                    console.log("✓ Disabled collision callbacks");
+                }
+            }
+            
+            return originalUpdate?.apply(this, arguments);
+        };
+        
+        console.log("✓ Body.preUpdate hooked");
+    }
+    
+    // Method 4: Intercept collision callbacks at a lower level
+    if (window.Phaser.Physics?.Arcade?.World) {
+        const proto = window.Phaser.Physics.Arcade.World.prototype;
+        
+        // Hook collideObjects (called when objects collide)
+        if (proto.collideObjects) {
+            const originalCollide = proto.collideObjects;
+            
+            proto.collideObjects = function(body1, body2, collideCallback, processCallback, callbackContext) {
+                // If either body is the player, skip collision
+                if (body1 === window._playerBody || body2 === window._playerBody) {
+                    console.log("🛡️ Blocked player collision!");
+                    return false;
+                }
+                
+                return originalCollide.apply(this, arguments);
+            };
+            
+            console.log("✓ World.collideObjects hooked");
+        }
+        
+        // Hook separate (handles actual collision)
+        if (proto.separate) {
+            const originalSeparate = proto.separate;
+            
+            proto.separate = function(body1, body2, processCallback, callbackContext, overlapOnly) {
+                // Block player damage
+                if (body1 === window._playerBody || body2 === window._playerBody) {
+                    return false;
+                }
+                
+                return originalSeparate.apply(this, arguments);
+            };
+            
+            console.log("✓ World.separate hooked");
         }
     }
-    const timeProcessed = 1730769902516;
-    let latestProcess = -1;
-    const cheat = (async () => {
-        for (const collider of Object.values((function react(r = document.querySelector("body>div")) { return Object.values(r)[1]?.children?.[0]?._owner.stateNode ? r : react(r.querySelector(":scope>div")) })())[1].children[0]._owner.stateNode.game.current.config.sceneConfig.physics.world.colliders._active.filter(x => x.callbackContext?.toString().includes('invulnerableTime') || x.callbackContext?.toString().includes('dmgCd'))) collider.collideCallback = () => { };
-    });
-    let img = new Image;
-    img.src = "https://raw.githubusercontent.com/Blooket-Council/Blooket-Cheats/main/autoupdate/timestamps/brawl/invincibility.png?" + Date.now();
-    img.crossOrigin = "Anonymous";
-    img.onload = function() {
-        const c = document.createElement("canvas");
-        const ctx = c.getContext("2d");
-        ctx.drawImage(img, 0, 0, this.width, this.height);
-        let { data } = ctx.getImageData(0, 0, this.width, this.height), decode = "", last;
-        let i = 0;
-        while (i < data.length) {
-            let char = String.fromCharCode(data[i % 4 == 3 ? (i++, i++) : i++] + data[i % 4 == 3 ? (i++, i++) : i++] * 256);
-            decode += char;
-            if (char == "/" && last == "*") break;
-            last = char;
+    
+    // Method 5: Set up monitor
+    console.log("\n✅ ALL HOOKS INSTALLED");
+    console.log("\n📋 NOW:");
+    console.log("1. Move your character around");
+    console.log("2. The script will detect and modify the player object");
+    console.log("3. Check console for confirmations");
+    
+    setTimeout(() => {
+        console.log("\n=== STATUS CHECK ===");
+        console.log("Sprites found:", window._sprites?.size || 0);
+        console.log("Bodies found:", window._bodies?.size || 0);
+        console.log("Player found:", window._player ? "✓" : "✗");
+        console.log("Player body found:", window._playerBody ? "✓" : "✗");
+        
+        if (window._player) {
+            console.log("\n✅ PLAYER OBJECT CAPTURED!");
+            console.log("You should now be invincible!");
+            alert("✅ Invincibility activated!\nPlayer object captured and modified.");
+        } else {
+            console.log("\n⏳ Still searching...");
+            console.log("Keep moving around in the game!");
         }
-        let _, time = timeProcessed, error = "There was an error checking for script updates. Run cheat anyway?";
-        try {
-            [_, time, error] = decode.match(/LastUpdated: (.+?); ErrorMessage: "((.|\n)+?)"/);
-        } catch (e) {}
-        if ((latestProcess = parseInt(time)) <= timeProcessed || iframe.contentWindow.confirm(error)) cheat();
-    }
-    img.onerror = img.onabort = () => {
-        img.onerror = img.onabort = null;
-        cheat();
-        let iframe = document.querySelector("iframe");
-        iframe.contentWindow.alert("It seems the GitHub is either blocked or down.\n\nIf it's NOT blocked, join the Discord server for updates\nhttps://discord.gg/jHjGrrdXP6\n(The cheat will still run after this alert)")
-    }
+    }, 3000);
+    
 })();
