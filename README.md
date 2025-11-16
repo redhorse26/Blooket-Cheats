@@ -1,3 +1,5 @@
+Note: Deceptive Dinos cheats will prob never be fixed atleast by me as I am pretty sure all the data is being processed online
+
 <p align="center">Cheats made by someone who knows more about what they're doing</p>
 <h3 align="center"><a href="https://discord.gg/jHjGrrdXP6">Support Server</a></h2>
 <h3 align="center"><a href="tutorial/readme.md">Instructions for importing bookmarklets</a></h2>
