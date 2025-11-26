@@ -1,13 +1,14 @@
 /**
- * Blooket - Auto Answer (Fixed Learning)
+ * Blooket - Learn Auto Answer (Ultra Fast)
  */
 
 (() => {
-    console.log("🧠 Smart Auto Answer v3\n");
+    console.log("🧠 Learn Auto Answer v4 (ULTRA FAST)\n");
     
     const answerDatabase = {};
     let lastQuestionProcessed = "";
     let isProcessing = false;
+    let lastFeedbackClick = 0;
     
     // Learn from responses
     const originalFetch = window.fetch;
@@ -98,15 +99,12 @@
     
     // Get current question text
     function getCurrentQuestion() {
-        // Find question container
-        const questionContainer = document.querySelector('[class*="questionContainer"]') ||
-                                 document.querySelector('[class*="QuestionContainer"]');
+        const questionContainer = document.querySelector('[class*="question"]');
         
         if (!questionContainer) return null;
         
-        // Find question text inside
-        const questionText = questionContainer.querySelector('[class*="questionText"]') ||
-                            questionContainer.querySelector('[class*="QuestionText"]');
+        const questionText = questionContainer.querySelector('[class*="Text"]') ||
+                            questionContainer.querySelector('div[style*="font-size"]');
         
         if (questionText) {
             const text = questionText.textContent.trim();
@@ -118,14 +116,73 @@
         return null;
     }
     
-    // Auto-answer system
+    // Auto-answer system (ULTRA FAST)
     function tryAutoAnswer() {
         if (isProcessing) return;
         
         try {
+            const bodyText = document.body.textContent;
+            
+            // Check for "Press Anywhere" text
+            if (bodyText.includes('Press Anywhere')) {
+                const now = Date.now();
+                if (now - lastFeedbackClick < 500) return;
+                
+                lastFeedbackClick = now;
+                
+                // Try multiple continue methods
+                const feedbackEl = document.querySelector('[class*="feedback"]') ||
+                                  document.querySelector('[class*="Feedback"]') ||
+                                  Array.from(document.querySelectorAll('div')).find(el => 
+                                      el.textContent.includes('Press Anywhere')
+                                  );
+                
+                if (feedbackEl) {
+                    feedbackEl.click();
+                }
+                
+                // Click body
+                document.body.click();
+                
+                // Press Enter
+                const enterEvent = new KeyboardEvent('keydown', {
+                    key: 'Enter',
+                    code: 'Enter',
+                    keyCode: 13,
+                    which: 13,
+                    bubbles: true,
+                    cancelable: true
+                });
+                document.dispatchEvent(enterEvent);
+                
+                const enterUpEvent = new KeyboardEvent('keyup', {
+                    key: 'Enter',
+                    code: 'Enter',
+                    keyCode: 13,
+                    which: 13,
+                    bubbles: true,
+                    cancelable: true
+                });
+                document.dispatchEvent(enterUpEvent);
+                
+                // Press Space
+                const spaceEvent = new KeyboardEvent('keydown', {
+                    key: ' ',
+                    code: 'Space',
+                    keyCode: 32,
+                    which: 32,
+                    bubbles: true,
+                    cancelable: true
+                });
+                document.dispatchEvent(spaceEvent);
+                
+                hidePrompt();
+                lastQuestionProcessed = "";
+                return;
+            }
+            
             // Check if question container exists
-            const questionContainer = document.querySelector('[class*="questionContainer"]') ||
-                                     document.querySelector('[class*="QuestionContainer"]');
+            const questionContainer = document.querySelector('[class*="question"]');
             
             if (!questionContainer) {
                 hidePrompt();
@@ -134,12 +191,11 @@
             }
             
             // Get answer buttons
-            const answerButtons = Array.from(document.querySelectorAll('[class*="answerButton"]'))
+            const answerButtons = Array.from(document.querySelectorAll('[class*="answer"]'))
                 .filter(btn => {
                     const classes = btn.className || "";
-                    return !classes.includes('Disabled') && 
-                           !classes.includes('disabled') &&
-                           btn.offsetParent !== null; // visible
+                    return !classes.toLowerCase().includes('disabled') &&
+                           btn.offsetParent !== null;
                 });
             
             if (answerButtons.length === 0) {
@@ -148,22 +204,13 @@
             }
             
             // Check if on feedback screen
-            const bodyText = document.body.textContent;
             if (bodyText.includes('CORRECT') || 
                 bodyText.includes('INCORRECT') || 
-                bodyText.includes('Press Anywhere') ||
                 bodyText.includes('Nice') ||
                 bodyText.includes('Good')) {
                 
                 hidePrompt();
                 lastQuestionProcessed = "";
-                
-                // Auto-continue
-                const overlay = document.querySelector('[class*="feedback"]') ||
-                              document.querySelector('[role="button"]');
-                if (overlay && overlay.offsetParent !== null) {
-                    setTimeout(() => overlay.click(), 200);
-                }
                 return;
             }
             
@@ -197,13 +244,12 @@
                         console.log(`   ✅ Clicking: "${btnText}"`);
                         hidePrompt();
                         
+                        btn.click();
+                        
                         setTimeout(() => {
-                            btn.click();
-                            setTimeout(() => {
-                                isProcessing = false;
-                                lastQuestionProcessed = "";
-                            }, 500);
-                        }, 100);
+                            isProcessing = false;
+                            lastQuestionProcessed = "";
+                        }, 200);
                         
                         return;
                     }
@@ -225,10 +271,10 @@
         }
     }
     
-    // Run every 30ms
-    setInterval(tryAutoAnswer, 30);
+    // Run every 10ms
+    setInterval(tryAutoAnswer, 10);
     
-    console.log("✅ Auto Answer Active (30ms polling)");
+    console.log("✅ ULTRA FAST Auto Answer Active (10ms polling)");
     console.log("📚 Answer questions manually to learn them");
     console.log("🔍 Check: window._answers\n");
     
