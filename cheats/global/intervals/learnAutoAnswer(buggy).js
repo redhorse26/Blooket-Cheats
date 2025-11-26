@@ -3,10 +3,11 @@
  */
 
 (() => {
-    console.log("🧠 Smart Auto Answer (Fixed)\n");
+    console.log("🧠 Smart Auto Answer v3\n");
     
     const answerDatabase = {};
-    let currentQuestionText = "";
+    let lastQuestionProcessed = "";
+    let isProcessing = false;
     
     // Learn from responses
     const originalFetch = window.fetch;
@@ -16,47 +17,43 @@
             
             clonedResponse.text().then(text => {
                 try {
-                    // RSC format: lines starting with numbers
                     const lines = text.split('\n');
                     
                     for (const line of lines) {
-                        // Look for the line with correctAnswers
-                        if (line.includes('correctAnswers') && line.includes('nextQuestion')) {
-                            console.log("Raw response line:", line);
-                            
+                        if (line.includes('correctAnswers') && line.includes('question')) {
                             // Extract correctAnswers array
-                            const correctMatch = line.match(/"correctAnswers":\[([^\]]+)\]/);
+                            const correctMatch = line.match(/"correctAnswers":\s*\[([^\]]*)\]/);
                             if (correctMatch) {
-                                // Parse the answer array
                                 const answersStr = correctMatch[1];
-                                const answers = answersStr.match(/"([^"]+)"/g)
-                                    ?.map(s => s.replace(/"/g, '')) || [];
+                                const answers = [];
                                 
-                                console.log("✓ Learned correct answers:", answers);
+                                // Parse answer strings
+                                const answerMatches = answersStr.matchAll(/"([^"]+)"/g);
+                                for (const match of answerMatches) {
+                                    answers.push(match[1]);
+                                }
                                 
-                                // Extract next question text
-                                const questionMatch = line.match(/"question":"([^"]+)"/);
-                                if (questionMatch) {
-                                    const nextQuestion = questionMatch[1];
-                                    answerDatabase[nextQuestion] = answers;
-                                    console.log(`  Stored for question: "${nextQuestion}"`);
-                                    console.log(`  Total learned: ${Object.keys(answerDatabase).length}`);
+                                // Extract current question
+                                const questionMatch = line.match(/"question"\s*:\s*"([^"]+)"/);
+                                if (questionMatch && answers.length > 0) {
+                                    const question = questionMatch[1];
+                                    answerDatabase[question] = answers;
+                                    console.log(`✓ Learned: "${question}" → [${answers.join(', ')}]`);
+                                    console.log(`  Total: ${Object.keys(answerDatabase).length} questions`);
                                 }
                             }
                         }
                     }
-                } catch (e) {
-                    console.log("Parse error:", e.message);
-                }
+                } catch (e) {}
             });
             
             return response;
         });
     };
     
-    console.log("✓ Fetch hook installed");
+    console.log("✓ Learning system active");
     
-    // Create floating prompt
+    // Prompt overlay
     let promptDiv = null;
     
     function showPrompt() {
@@ -67,17 +64,29 @@
                 top: 20px;
                 left: 50%;
                 transform: translateX(-50%);
-                background: #ff5555;
+                background: linear-gradient(135deg, #ff5555, #ff3333);
                 color: white;
-                padding: 20px 40px;
-                border-radius: 10px;
-                font-size: 24px;
+                padding: 15px 35px;
+                border-radius: 12px;
+                font-size: 20px;
                 font-weight: bold;
                 z-index: 999999;
-                box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+                box-shadow: 0 6px 25px rgba(255,0,0,0.4);
                 text-align: center;
+                animation: pulse 1.5s ease-in-out infinite;
             `;
-            promptDiv.innerHTML = '⚠️ ANSWER THIS QUESTION<br>TO LEARN IT ⚠️';
+            promptDiv.innerHTML = '⚠️ ANSWER TO LEARN ⚠️';
+            
+            // Add pulse animation
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes pulse {
+                    0%, 100% { transform: translateX(-50%) scale(1); }
+                    50% { transform: translateX(-50%) scale(1.05); }
+                }
+            `;
+            document.head.appendChild(style);
+            
             document.body.appendChild(promptDiv);
         }
         promptDiv.style.display = 'block';
@@ -87,78 +96,141 @@
         if (promptDiv) promptDiv.style.display = 'none';
     }
     
-    // Auto-answer loop
-    setInterval(() => {
+    // Get current question text
+    function getCurrentQuestion() {
+        // Find question container
+        const questionContainer = document.querySelector('[class*="questionContainer"]') ||
+                                 document.querySelector('[class*="QuestionContainer"]');
+        
+        if (!questionContainer) return null;
+        
+        // Find question text inside
+        const questionText = questionContainer.querySelector('[class*="questionText"]') ||
+                            questionContainer.querySelector('[class*="QuestionText"]');
+        
+        if (questionText) {
+            const text = questionText.textContent.trim();
+            if (text.length > 0 && text.length < 500) {
+                return text;
+            }
+        }
+        
+        return null;
+    }
+    
+    // Auto-answer system
+    function tryAutoAnswer() {
+        if (isProcessing) return;
+        
         try {
-            const answerButtons = Array.from(document.querySelectorAll("[class*='answerButton']"))
-                .filter(btn => !btn.className.includes('Disabled'));
+            // Check if question container exists
+            const questionContainer = document.querySelector('[class*="questionContainer"]') ||
+                                     document.querySelector('[class*="QuestionContainer"]');
             
+            if (!questionContainer) {
+                hidePrompt();
+                lastQuestionProcessed = "";
+                return;
+            }
+            
+            // Get answer buttons
+            const answerButtons = Array.from(document.querySelectorAll('[class*="answerButton"]'))
+                .filter(btn => {
+                    const classes = btn.className || "";
+                    return !classes.includes('Disabled') && 
+                           !classes.includes('disabled') &&
+                           btn.offsetParent !== null; // visible
+                });
+            
+            if (answerButtons.length === 0) {
+                hidePrompt();
+                return;
+            }
+            
+            // Check if on feedback screen
             const bodyText = document.body.textContent;
+            if (bodyText.includes('CORRECT') || 
+                bodyText.includes('INCORRECT') || 
+                bodyText.includes('Press Anywhere') ||
+                bodyText.includes('Nice') ||
+                bodyText.includes('Good')) {
+                
+                hidePrompt();
+                lastQuestionProcessed = "";
+                
+                // Auto-continue
+                const overlay = document.querySelector('[class*="feedback"]') ||
+                              document.querySelector('[role="button"]');
+                if (overlay && overlay.offsetParent !== null) {
+                    setTimeout(() => overlay.click(), 200);
+                }
+                return;
+            }
             
-            // Check if on question screen
-            if (answerButtons.length > 0 && 
-                !bodyText.includes('CORRECT') && 
-                !bodyText.includes('INCORRECT') &&
-                !bodyText.includes('Press Anywhere')) {
+            // Get current question
+            const question = getCurrentQuestion();
+            
+            if (!question) {
+                hidePrompt();
+                return;
+            }
+            
+            // Prevent double-processing same question
+            if (question === lastQuestionProcessed) {
+                return;
+            }
+            
+            // Check if we know this question
+            if (answerDatabase[question]) {
+                const correctAnswers = answerDatabase[question];
+                console.log(`\n🎯 Auto-answering: "${question}"`);
+                console.log(`   Correct: [${correctAnswers.join(', ')}]`);
                 
-                // Get all potential question texts
-                const questionElements = Array.from(document.querySelectorAll("*"))
-                    .filter(el => {
-                        const text = el.textContent.trim();
-                        return text.length > 5 && text.length < 200 && 
-                               !text.includes('Settings') && !text.includes('Lvl');
-                    });
+                isProcessing = true;
+                lastQuestionProcessed = question;
                 
-                let foundAnswer = false;
-                
-                // Check if we know any of these questions
-                for (const el of questionElements) {
-                    const questionText = el.textContent.trim();
+                // Find matching button
+                for (const btn of answerButtons) {
+                    const btnText = btn.textContent.trim();
                     
-                    if (answerDatabase[questionText]) {
-                        const correctAnswers = answerDatabase[questionText];
-                        console.log(`\n🎯 Known question: "${questionText}"`);
-                        console.log("Correct answers:", correctAnswers);
+                    if (correctAnswers.includes(btnText)) {
+                        console.log(`   ✅ Clicking: "${btnText}"`);
+                        hidePrompt();
                         
-                        // Find matching button
-                        for (const btn of answerButtons) {
-                            const btnText = btn.textContent.trim();
-                            if (correctAnswers.includes(btnText)) {
-                                console.log(`✅ Clicking: "${btnText}"`);
-                                btn.click();
-                                foundAnswer = true;
-                                hidePrompt();
-                                break;
-                            }
-                        }
+                        setTimeout(() => {
+                            btn.click();
+                            setTimeout(() => {
+                                isProcessing = false;
+                                lastQuestionProcessed = "";
+                            }, 500);
+                        }, 100);
                         
-                        if (foundAnswer) break;
+                        return;
                     }
                 }
                 
-                // Show prompt if unknown
-                if (!foundAnswer) {
+                console.log(`   ⚠️ Correct answer not found in buttons`);
+                isProcessing = false;
+            } else {
+                // Unknown question
+                if (question !== lastQuestionProcessed) {
+                    console.log(`\n❓ Unknown: "${question}"`);
+                    lastQuestionProcessed = question;
                     showPrompt();
                 }
-                
-            } else {
-                hidePrompt();
             }
             
-            // Auto-continue feedback
-            if (bodyText.includes('Press Anywhere')) {
-                const continueArea = document.querySelector("[class*='feedback']");
-                if (continueArea) {
-                    setTimeout(() => continueArea.click(), 300);
-                }
-            }
-            
-        } catch (e) {}
-    }, 400);
+        } catch (e) {
+            isProcessing = false;
+        }
+    }
     
-    console.log("✅ Smart Auto Answer Active!");
-    console.log("Answer questions manually - it will learn and auto-answer repeats!");
-    console.log("\nTo check learned answers: window._answers");
+    // Run every 30ms
+    setInterval(tryAutoAnswer, 30);
+    
+    console.log("✅ Auto Answer Active (30ms polling)");
+    console.log("📚 Answer questions manually to learn them");
+    console.log("🔍 Check: window._answers\n");
     
     window._answers = answerDatabase;
 })();
