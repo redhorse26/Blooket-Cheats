@@ -7,7 +7,7 @@ Automatically answers questions for you
 Automatically highlights correct answers in green and incorrect in red
 
 ## [Percent Auto Answer](percentAutoAnswer.js)
-Answers questions correctly or incorrectly depending on the input grade goal
+Answers questions correctly if you press % for learnPercentAutoAnswer and answers questions correctly based on input grade score for percentAutoAnswer.js
 
 ## [Subtle Highlight Answers](subtleHighlightAnswers.js)
 Automatically removes the shadow from correct answer
