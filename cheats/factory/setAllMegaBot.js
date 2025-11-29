@@ -1,82 +1,77 @@
 /**
  * @license AGPL-3.0
- * Blooket Cheats
- * Copyright (C) 2023-present 05Konz
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published
- * by the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- * 
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- * 
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- * 
- * Source: https://github.com/Blooket-Council/Blooket-Cheats 05konz994@gmail.com
-*/
-
-/* THE UPDATE CHECKER IS ADDED DURING COMMIT PREP, THERE MAY BE REDUNDANT CODE, DO NOT TOUCH */
+ * Blooket Factory - Set All Mega Bots
+ * Replaces your entire factory with 10 Maxed Mega Bots
+ */
 
 (() => {
-    let iframe = document.querySelector("iframe");
-    if (!iframe) {
-        iframe = document.createElement("iframe");
-        iframe.style.display = "none";
+    console.clear();
+    console.log("🏭 Factory: Setting all to Mega Bots...");
+
+    let targetObj = null;
+
+    // 1. Scan for the factories container
+    function scanDeep(obj, depth = 0) {
+        if (depth > 8 || targetObj) return;
+        if (!obj || typeof obj !== 'object') return;
+
+        if (obj.factories && Array.isArray(obj.factories)) {
+            targetObj = obj;
+            return;
+        }
+
+        if (Array.isArray(obj)) {
+            obj.forEach(item => scanDeep(item, depth + 1));
+        } else {
+            if (obj.props) scanDeep(obj.props, depth + 1);
+            if (obj.children) scanDeep(obj.children, depth + 1);
+            if (obj.memoizedProps) scanDeep(obj.memoizedProps, depth + 1);
+            if (obj.memoizedState) scanDeep(obj.memoizedState, depth + 1);
+        }
+    }
+
+    // 2. Start Traversal
+    const root = document.querySelector('#app') || document.body;
+    function traverseDOM(node) {
+        if (targetObj) return;
+        const k = Object.keys(node).find(key => key.startsWith('__reactFiber'));
+        if (k) scanDeep(node[k]);
+        for (const child of node.children) traverseDOM(child);
+    }
+    traverseDOM(root);
+
+    // 3. Execute Hack
+    if (targetObj) {
+        // Define Mega Bot Stats
+        const megaBot = {
+            name: "Mega Bot",
+            color: "#d71f27",
+            class: "🤖",
+            rarity: "Legendary",
+            cash: [80000, 430000, 4200000, 62000000, 1000000000],
+            time: [5, 5, 3, 3, 3],
+            price: [7000000, 120000000, 1900000000, 35000000000],
+            active: false,
+            level: 4,
+            bonus: 5.0
+        };
+
+        // Modify the array in-place to preserve references
+        const arr = targetObj.factories;
+        arr.length = 0; // Clear current blooks
+        
+        // Fill with 10 Mega Bots
+        for (let i = 0; i < 10; i++) {
+            // Important: spread ...megaBot to create a unique copy for each slot
+            arr.push({ ...megaBot });
+        }
+
+        let iframe = document.createElement('iframe');
         document.body.append(iframe);
-    }
-    /* By CryptoDude3 */
-    if (window.fetch.call.toString() == 'function call() { [native code] }') {
-        const call = window.fetch.call;
-        window.fetch.call = function () {
-            if (!arguments[1].includes("s.blooket.com/rc")) return call.apply(this, arguments);
-        }
-    }
-    const timeProcessed = 1730769906184;
-    let latestProcess = -1;
-    const cheat = (async () => {
-        Object.values((function react(r = document.querySelector("body>div")) { return Object.values(r)[1]?.children?.[0]?._owner.stateNode ? r : react(r.querySelector(":scope>div")) })())[1].children[0]._owner.stateNode.setState({
-            blooks: Array.from({ length: 10 }, () => ({
-                name: "Mega Bot",
-                color: "#d71f27",
-                class: "🤖",
-                rarity: "Legendary",
-                cash: [8e4, 43e4, 42e5, 62e6, 1e9],
-                time: [5, 5, 3, 3, 3],
-                price: [7e6, 12e7, 19e8, 35e9],
-                active: false,
-                level: 4,
-                bonus: 5.5
-            }))
-        });
-    });
-    let img = new Image;
-    img.src = "https://raw.githubusercontent.com/Blooket-Council/Blooket-Cheats/main/autoupdate/timestamps/factory/setAllMegaBot.png?" + Date.now();
-    img.crossOrigin = "Anonymous";
-    img.onload = function() {
-        const c = document.createElement("canvas");
-        const ctx = c.getContext("2d");
-        ctx.drawImage(img, 0, 0, this.width, this.height);
-        let { data } = ctx.getImageData(0, 0, this.width, this.height), decode = "", last;
-        let i = 0;
-        while (i < data.length) {
-            let char = String.fromCharCode(data[i % 4 == 3 ? (i++, i++) : i++] + data[i % 4 == 3 ? (i++, i++) : i++] * 256);
-            decode += char;
-            if (char == "/" && last == "*") break;
-            last = char;
-        }
-        let _, time = timeProcessed, error = "There was an error checking for script updates. Run cheat anyway?";
-        try {
-            [_, time, error] = decode.match(/LastUpdated: (.+?); ErrorMessage: "((.|\n)+?)"/);
-        } catch (e) {}
-        if ((latestProcess = parseInt(time)) <= timeProcessed || iframe.contentWindow.confirm(error)) cheat();
-    }
-    img.onerror = img.onabort = () => {
-        img.onerror = img.onabort = null;
-        cheat();
-        let iframe = document.querySelector("iframe");
-        iframe.contentWindow.alert("It seems the GitHub is either blocked or down.\n\nIf it's NOT blocked, join the Discord server for updates\nhttps://discord.gg/jHjGrrdXP6\n(The cheat will still run after this alert)")
+        iframe.contentWindow.alert("✅ Factory replaced with 10 Mega Bots!\n\nIMPORTANT: Buy an upgrade or click a blook to refresh the visuals.");
+        iframe.remove();
+
+    } else {
+        alert("❌ Could not find factories container. Place at least one blook first.");
     }
 })();
