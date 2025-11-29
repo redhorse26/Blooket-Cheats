@@ -1,77 +1,93 @@
 /**
  * @license AGPL-3.0
- * Blooket Cheats
- * Copyright (C) 2023-present 05Konz
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published
- * by the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- * 
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- * 
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- * 
- * Source: https://github.com/Blooket-Council/Blooket-Cheats 05konz994@gmail.com
-*/
-
-/* THE UPDATE CHECKER IS ADDED DURING COMMIT PREP, THERE MAY BE REDUNDANT CODE, DO NOT TOUCH */
+ * TD2 - Max Towers (Fixed Stats)
+ */
 
 (() => {
-    let iframe = document.querySelector("iframe");
-    if (!iframe) {
-        iframe = document.createElement("iframe");
-        iframe.style.display = "none";
-        document.body.append(iframe);
-    }
-    /* By CryptoDude3 */
-    if (window.fetch.call.toString() == 'function call() { [native code] }') {
-        const call = window.fetch.call;
-        window.fetch.call = function () {
-            if (!arguments[1].includes("s.blooket.com/rc")) return call.apply(this, arguments);
+    // 1. SETUP UI
+    let iframe = document.createElement('iframe');
+    document.body.append(iframe);
+    window.alert = iframe.contentWindow.alert.bind(window);
+    iframe.remove();
+
+    // 2. TRAP THE SCENE
+    function withScene(callback) {
+        if (window._SCENE && window._SCENE.sys && window._SCENE.sys.isActive()) {
+            callback(window._SCENE);
+            return;
         }
+        let found = false;
+        const originalUpdate = window.Phaser.Scenes.SceneManager.prototype.update;
+        window.Phaser.Scenes.SceneManager.prototype.update = function(time, delta) {
+            originalUpdate.call(this, time, delta);
+            if (found) return;
+            for (const scene of this.scenes) {
+                if (scene.sys.isActive() && scene.sys.settings.key !== 'Boot') {
+                    window._SCENE = scene;
+                    found = true;
+                    window.Phaser.Scenes.SceneManager.prototype.update = originalUpdate;
+                    callback(scene);
+                    return;
+                }
+            }
+        };
     }
-    const timeProcessed = 1730769912823;
-    let latestProcess = -1;
-    const cheat = (async () => {
-        Object.values((function react(r = document.querySelector("body>div")) { return Object.values(r)[1]?.children?.[0]?._owner.stateNode ? r : react(r.querySelector(":scope>div")) })())[1].children[0]._owner.stateNode.state.towers.forEach(tower => {
-            tower.stats.dmg = 1e6;
-            tower.stats.fireRate = 50;
-            tower.stats.ghostDetect = true;
-            tower.stats.maxTargets = 1e6;
-            tower.stats.numProjectiles &&= 100;
-            tower.stats.range = 100;
-            if (tower.stats.auraBuffs) for (const buff in tower.stats.auraBuffs) tower.stats.auraBuffs[buff] *= 100;
+
+    // 3. EXECUTE CHEAT
+    withScene((scene) => {
+        const service = scene.towerService;
+
+        if (!service || !service.towers) {
+            alert("❌ Tower Service not found!");
+            return;
+        }
+
+        const towersDict = service.towers;
+        let totalUpgraded = 0;
+
+        // Iterate over dictionary keys (basic, aliens, etc.)
+        Object.keys(towersDict).forEach(typeKey => {
+            const group = towersDict[typeKey];
+
+            // Get Array of Towers from Group
+            let towers = [];
+            if (group.getChildren) towers = group.getChildren();
+            else if (group.children && group.children.entries) towers = group.children.entries;
+            else if (Array.isArray(group)) towers = group;
+
+            towers.forEach(tower => {
+                // 1. Update Internal Counters (Instant Reload)
+                // Setting cd to 0 usually makes it fire, but fullCd controls the reset time
+                tower.cd = 0; 
+                tower.fullCd = 1; // 1 frame reload
+
+                // 2. Update Stats Object (The important part!)
+                if (tower.stats) {
+                    tower.stats.dmg = 1000000;      // Massive Damage
+                    tower.stats.range = 1000;       // Map-wide Range
+                    tower.stats.fireRate = 50;      // Ultra Fast
+                    tower.stats.ghostDetect = true; // Hit Ghosts
+                    tower.stats.maxTargets = 1000;  // Hit everything at once
+                    
+                    // Multi-projectile towers
+                    if (tower.stats.numProjectiles) {
+                        tower.stats.numProjectiles = 100;
+                    }
+                }
+
+                // 3. Update Visuals
+                if (tower.rangeCircle) {
+                    tower.rangeCircle.radius = 1000;
+                }
+                
+                totalUpgraded++;
+            });
         });
-    });
-    let img = new Image;
-    img.src = "https://raw.githubusercontent.com/Blooket-Council/Blooket-Cheats/main/autoupdate/timestamps/tower-defense-2/maxTowers.png?" + Date.now();
-    img.crossOrigin = "Anonymous";
-    img.onload = function() {
-        const c = document.createElement("canvas");
-        const ctx = c.getContext("2d");
-        ctx.drawImage(img, 0, 0, this.width, this.height);
-        let { data } = ctx.getImageData(0, 0, this.width, this.height), decode = "", last;
-        let i = 0;
-        while (i < data.length) {
-            let char = String.fromCharCode(data[i % 4 == 3 ? (i++, i++) : i++] + data[i % 4 == 3 ? (i++, i++) : i++] * 256);
-            decode += char;
-            if (char == "/" && last == "*") break;
-            last = char;
+
+        if (totalUpgraded > 0) {
+            alert(`✅ Upgraded ${totalUpgraded} towers (DMG, Range, Ghost Hit)!`);
+        } else {
+            alert("⚠️ No active towers found.");
         }
-        let _, time = timeProcessed, error = "There was an error checking for script updates. Run cheat anyway?";
-        try {
-            [_, time, error] = decode.match(/LastUpdated: (.+?); ErrorMessage: "((.|\n)+?)"/);
-        } catch (e) {}
-        if ((latestProcess = parseInt(time)) <= timeProcessed || iframe.contentWindow.confirm(error)) cheat();
-    }
-    img.onerror = img.onabort = () => {
-        img.onerror = img.onabort = null;
-        cheat();
-        let iframe = document.querySelector("iframe");
-        iframe.contentWindow.alert("It seems the GitHub is either blocked or down.\n\nIf it's NOT blocked, join the Discord server for updates\nhttps://discord.gg/jHjGrrdXP6\n(The cheat will still run after this alert)")
-    }
+    });
 })();
