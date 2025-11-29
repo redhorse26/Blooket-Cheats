@@ -1,73 +1,76 @@
 /**
  * @license AGPL-3.0
- * Blooket Cheats
- * Copyright (C) 2023-present 05Konz
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published
- * by the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- * 
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- * 
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- * 
- * Source: https://github.com/Blooket-Council/Blooket-Cheats 05konz994@gmail.com
-*/
-
-/* THE UPDATE CHECKER IS ADDED DURING COMMIT PREP, THERE MAY BE REDUNDANT CODE, DO NOT TOUCH */
+ * Tower Defense - Max Towers (Fixed for Component Property)
+ */
 
 (() => {
-    let iframe = document.querySelector("iframe");
-    if (!iframe) {
-        iframe = document.createElement("iframe");
-        iframe.style.display = "none";
-        document.body.append(iframe);
-    }
-    /* By CryptoDude3 */
-    if (window.fetch.call.toString() == 'function call() { [native code] }') {
-        const call = window.fetch.call;
-        window.fetch.call = function () {
-            if (!arguments[1].includes("s.blooket.com/rc")) return call.apply(this, arguments);
+    let iframe = document.createElement('iframe');
+    document.body.append(iframe);
+    window.alert = iframe.contentWindow.alert.bind(window);
+    iframe.remove();
+    
+    function searchDOM(element = document.body, depth = 0) {
+        if (depth > 5) return null;
+        const keys = Object.keys(element);
+        const reactKey = keys.find(k => k.includes('react'));
+        if (reactKey) {
+            try {
+                let fiber = element[reactKey];
+                while (fiber) {
+                    const node = fiber.stateNode || (fiber._owner ? fiber._owner.stateNode : null);
+                    
+                    if (node) {
+                        // CHECK 1: Check if 'towers' is a direct property (This is where we found it!)
+                        if (node.towers && Array.isArray(node.towers)) return node;
+
+                        // CHECK 2: Check state just in case (for round, etc)
+                        if (node.state && node.state.round !== undefined) return node;
+                    }
+                    fiber = fiber.return;
+                }
+            } catch (e) {}
         }
+        for (const child of element.children) {
+            const result = searchDOM(child, depth + 1);
+            if (result) return result;
+        }
+        return null;
     }
-    const timeProcessed = 1730769912231;
-    let latestProcess = -1;
-    const cheat = (async () => {
-        Object.values((function react(r = document.querySelector("body>div")) { return Object.values(r)[1]?.children?.[0]?._owner.stateNode ? r : react(r.querySelector(":scope>div")) })())[1].children[0]._owner.stateNode.towers.forEach(tower => {
-            tower.range = 100;
-            tower.fullCd = tower.cd = 0;
-            tower.damage = 1e6;
-        });
+    
+    const comp = searchDOM();
+    
+    if (!comp) { 
+        alert("❌ Component not found!"); 
+        return; 
+    }
+    
+    // Check if towers exist on the component
+    if (!comp.towers || comp.towers.length === 0) {
+        alert("⚠️ No towers found! Place a tower first.");
+        return;
+    }
+
+    console.log("Found Towers:", comp.towers);
+
+    // Modify Towers
+    comp.towers.forEach(tower => {
+        tower.range = 100;
+        tower.cd = 0;
+        tower.damage = 1000000;
+        
+        // Some p5 sketches use a 'stats' object or 'level' property
+        if (tower.stats) {
+            tower.stats.damage = 1000000;
+            tower.stats.range = 100;
+            tower.stats.fireRate = 0.01;
+        }
     });
-    let img = new Image;
-    img.src = "https://raw.githubusercontent.com/Blooket-Council/Blooket-Cheats/main/autoupdate/timestamps/tower-defense/maxTowers.png?" + Date.now();
-    img.crossOrigin = "Anonymous";
-    img.onload = function() {
-        const c = document.createElement("canvas");
-        const ctx = c.getContext("2d");
-        ctx.drawImage(img, 0, 0, this.width, this.height);
-        let { data } = ctx.getImageData(0, 0, this.width, this.height), decode = "", last;
-        let i = 0;
-        while (i < data.length) {
-            let char = String.fromCharCode(data[i % 4 == 3 ? (i++, i++) : i++] + data[i % 4 == 3 ? (i++, i++) : i++] * 256);
-            decode += char;
-            if (char == "/" && last == "*") break;
-            last = char;
-        }
-        let _, time = timeProcessed, error = "There was an error checking for script updates. Run cheat anyway?";
-        try {
-            [_, time, error] = decode.match(/LastUpdated: (.+?); ErrorMessage: "((.|\n)+?)"/);
-        } catch (e) {}
-        if ((latestProcess = parseInt(time)) <= timeProcessed || iframe.contentWindow.confirm(error)) cheat();
-    }
-    img.onerror = img.onabort = () => {
-        img.onerror = img.onabort = null;
-        cheat();
-        let iframe = document.querySelector("iframe");
-        iframe.contentWindow.alert("It seems the GitHub is either blocked or down.\n\nIf it's NOT blocked, join the Discord server for updates\nhttps://discord.gg/jHjGrrdXP6\n(The cheat will still run after this alert)")
-    }
+
+    alert(`✅ Upgraded ${comp.towers.length} towers!`);
+    
+    // Since 'towers' is not in state, React won't re-render automatically.
+    // However, p5.js usually reads these values every frame in 'draw()', so it should just work instantly.
+    // If not, we can try forcing an update:
+    if (comp.forceUpdate) comp.forceUpdate();
+
 })();
