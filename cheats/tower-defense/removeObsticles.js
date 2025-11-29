@@ -1,70 +1,68 @@
 /**
  * @license AGPL-3.0
- * Blooket Cheats
- * Copyright (C) 2023-present 05Konz
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published
- * by the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- * 
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- * 
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- * 
- * Source: https://github.com/Blooket-Council/Blooket-Cheats 05konz994@gmail.com
-*/
-
-/* THE UPDATE CHECKER IS ADDED DURING COMMIT PREP, THERE MAY BE REDUNDANT CODE, DO NOT TOUCH */
+ * Tower Defense - Remove Obstacles (Fixed)
+ */
 
 (() => {
-    let iframe = document.querySelector("iframe");
-    if (!iframe) {
-        iframe = document.createElement("iframe");
-        iframe.style.display = "none";
-        document.body.append(iframe);
-    }
-    /* By CryptoDude3 */
-    if (window.fetch.call.toString() == 'function call() { [native code] }') {
-        const call = window.fetch.call;
-        window.fetch.call = function () {
-            if (!arguments[1].includes("s.blooket.com/rc")) return call.apply(this, arguments);
+    // 1. Setup UI helpers
+    let iframe = document.createElement('iframe');
+    document.body.append(iframe);
+    window.alert = iframe.contentWindow.alert.bind(window);
+    iframe.remove();
+    
+    // 2. Robust React Finder
+    function searchDOM(element = document.body, depth = 0) {
+        if (depth > 5) return null;
+        const keys = Object.keys(element);
+        const reactKey = keys.find(k => k.includes('react'));
+        if (reactKey) {
+            try {
+                let fiber = element[reactKey];
+                while (fiber) {
+                    const node = fiber.stateNode || (fiber._owner ? fiber._owner.stateNode : null);
+                    
+                    if (node) {
+                        // We know 'tiles' is a direct property on this component
+                        if (node.tiles && Array.isArray(node.tiles)) return node;
+                    }
+                    fiber = fiber.return;
+                }
+            } catch (e) {}
         }
-    }
-    const timeProcessed = 1730769912484;
-    let latestProcess = -1;
-    const cheat = (async () => {
-        let { stateNode } = Object.values((function react(r = document.querySelector("body>div")) { return Object.values(r)[1]?.children?.[0]?._owner.stateNode ? r : react(r.querySelector(":scope>div")) })())[1].children[0]._owner;
-        stateNode.tiles = stateNode.tiles.map(row => row.fill(0));
-    });
-    let img = new Image;
-    img.src = "https://raw.githubusercontent.com/Blooket-Council/Blooket-Cheats/main/autoupdate/timestamps/tower-defense/removeObsticles.png?" + Date.now();
-    img.crossOrigin = "Anonymous";
-    img.onload = function() {
-        const c = document.createElement("canvas");
-        const ctx = c.getContext("2d");
-        ctx.drawImage(img, 0, 0, this.width, this.height);
-        let { data } = ctx.getImageData(0, 0, this.width, this.height), decode = "", last;
-        let i = 0;
-        while (i < data.length) {
-            let char = String.fromCharCode(data[i % 4 == 3 ? (i++, i++) : i++] + data[i % 4 == 3 ? (i++, i++) : i++] * 256);
-            decode += char;
-            if (char == "/" && last == "*") break;
-            last = char;
+        for (const child of element.children) {
+            const result = searchDOM(child, depth + 1);
+            if (result) return result;
         }
-        let _, time = timeProcessed, error = "There was an error checking for script updates. Run cheat anyway?";
-        try {
-            [_, time, error] = decode.match(/LastUpdated: (.+?); ErrorMessage: "((.|\n)+?)"/);
-        } catch (e) {}
-        if ((latestProcess = parseInt(time)) <= timeProcessed || iframe.contentWindow.confirm(error)) cheat();
+        return null;
     }
-    img.onerror = img.onabort = () => {
-        img.onerror = img.onabort = null;
-        cheat();
-        let iframe = document.querySelector("iframe");
-        iframe.contentWindow.alert("It seems the GitHub is either blocked or down.\n\nIf it's NOT blocked, join the Discord server for updates\nhttps://discord.gg/jHjGrrdXP6\n(The cheat will still run after this alert)")
+    
+    // 3. Execute Cheat
+    const comp = searchDOM();
+    
+    if (!comp) { 
+        alert("❌ Component not found! Make sure you are in-game."); 
+        return; 
     }
+
+    if (comp.tiles && comp.tiles.length > 0) {
+        // The map is usually a 2D array (array of rows)
+        // We map over every row, and fill it with 0 (Grass/Empty)
+        // 0 = Empty, 3 = Rock/Tree/Obstacle usually
+        
+        comp.tiles = comp.tiles.map(row => {
+            if (Array.isArray(row)) {
+                // Keep the same length, fill with 0
+                return new Array(row.length).fill(0);
+            }
+            return row;
+        });
+
+        // Force update if possible, though p5 draw loop should pick it up immediately
+        if (comp.forceUpdate) comp.forceUpdate();
+
+        alert("✅ All obstacles removed! You can now place towers anywhere.");
+    } else {
+        alert("⚠️ No map tiles found.");
+    }
+
 })();
