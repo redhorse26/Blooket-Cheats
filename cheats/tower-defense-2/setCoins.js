@@ -1,73 +1,60 @@
 /**
  * @license AGPL-3.0
- * Blooket Cheats
- * Copyright (C) 2023-present 05Konz
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published
- * by the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- * 
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- * 
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- * 
- * Source: https://github.com/Blooket-Council/Blooket-Cheats 05konz994@gmail.com
-*/
-
-/* THE UPDATE CHECKER IS ADDED DURING COMMIT PREP, THERE MAY BE REDUNDANT CODE, DO NOT TOUCH */
+ * TD2 - Set Coins (Final)
+ * Targets: scene.gameManager.coins
+ */
 
 (() => {
-    let iframe = document.querySelector("iframe");
-    if (!iframe) {
-        iframe = document.createElement("iframe");
-        iframe.style.display = "none";
-        document.body.append(iframe);
-    }
-    /* By CryptoDude3 */
-    if (window.fetch.call.toString() == 'function call() { [native code] }') {
-        const call = window.fetch.call;
-        window.fetch.call = function () {
-            if (!arguments[1].includes("s.blooket.com/rc")) return call.apply(this, arguments);
+    // 1. SETUP UI
+    let iframe = document.createElement('iframe');
+    document.body.append(iframe);
+    window.alert = iframe.contentWindow.alert.bind(window);
+    window.prompt = iframe.contentWindow.prompt.bind(window);
+    iframe.remove();
+
+    // 2. TRAP THE SCENE
+    function withScene(callback) {
+        if (window._SCENE && window._SCENE.sys && window._SCENE.sys.isActive()) {
+            callback(window._SCENE);
+            return;
         }
+        let found = false;
+        const originalUpdate = window.Phaser.Scenes.SceneManager.prototype.update;
+        window.Phaser.Scenes.SceneManager.prototype.update = function(time, delta) {
+            originalUpdate.call(this, time, delta);
+            if (found) return;
+            for (const scene of this.scenes) {
+                if (scene.sys.isActive() && scene.sys.settings.key !== 'Boot') {
+                    window._SCENE = scene;
+                    found = true;
+                    window.Phaser.Scenes.SceneManager.prototype.update = originalUpdate;
+                    callback(scene);
+                    return;
+                }
+            }
+        };
     }
-    const timeProcessed = 1730769912991;
-    let latestProcess = -1;
-    const cheat = (async () => {
-        let i = document.createElement('iframe');
-        document.body.append(i);
-        window.prompt = i.contentWindow.prompt.bind(window);
-        i.remove();
-        Object.values((function react(r = document.querySelector("body>div")) { return Object.values(r)[1]?.children?.[0]?._owner.stateNode ? r : react(r.querySelector(":scope>div")) })())[1].children[0]._owner.stateNode.setState({ coins: parseInt(prompt("How many tokens would you like?")) || 0 });
+
+    // 3. EXECUTE CHEAT
+    withScene((scene) => {
+        const manager = scene.gameManager;
+
+        if (!manager) {
+            alert("❌ Game Manager not found! (Wait for game to load)");
+            return;
+        }
+
+        const current = manager.coins;
+        const input = prompt(`Current Coins: ${current}\n\nEnter new amount:`, "50000");
+        
+        if (input !== null) {
+            const amount = parseInt(input);
+            if (!isNaN(amount)) {
+                manager.coins = amount;
+                
+                // User requested note added
+                alert(`✅ Coins set to ${amount}!\n\nNote: Buy something to update the display counter.`);
+            }
+        }
     });
-    let img = new Image;
-    img.src = "https://raw.githubusercontent.com/Blooket-Council/Blooket-Cheats/main/autoupdate/timestamps/tower-defense-2/setCoins.png?" + Date.now();
-    img.crossOrigin = "Anonymous";
-    img.onload = function() {
-        const c = document.createElement("canvas");
-        const ctx = c.getContext("2d");
-        ctx.drawImage(img, 0, 0, this.width, this.height);
-        let { data } = ctx.getImageData(0, 0, this.width, this.height), decode = "", last;
-        let i = 0;
-        while (i < data.length) {
-            let char = String.fromCharCode(data[i % 4 == 3 ? (i++, i++) : i++] + data[i % 4 == 3 ? (i++, i++) : i++] * 256);
-            decode += char;
-            if (char == "/" && last == "*") break;
-            last = char;
-        }
-        let _, time = timeProcessed, error = "There was an error checking for script updates. Run cheat anyway?";
-        try {
-            [_, time, error] = decode.match(/LastUpdated: (.+?); ErrorMessage: "((.|\n)+?)"/);
-        } catch (e) {}
-        if ((latestProcess = parseInt(time)) <= timeProcessed || iframe.contentWindow.confirm(error)) cheat();
-    }
-    img.onerror = img.onabort = () => {
-        img.onerror = img.onabort = null;
-        cheat();
-        let iframe = document.querySelector("iframe");
-        iframe.contentWindow.alert("It seems the GitHub is either blocked or down.\n\nIf it's NOT blocked, join the Discord server for updates\nhttps://discord.gg/jHjGrrdXP6\n(The cheat will still run after this alert)")
-    }
 })();
