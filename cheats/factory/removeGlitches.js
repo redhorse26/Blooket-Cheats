@@ -1,91 +1,93 @@
 /**
  * @license AGPL-3.0
- * Blooket Cheats
- * Copyright (C) 2023-present 05Konz
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published
- * by the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- * 
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- * 
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- * 
- * Source: https://github.com/Blooket-Council/Blooket-Cheats 05konz994@gmail.com
-*/
-
-/* THE UPDATE CHECKER IS ADDED DURING COMMIT PREP, THERE MAY BE REDUNDANT CODE, DO NOT TOUCH */
+ * Blooket Factory - Glitch Memory Hunter
+ * Scans memory for specific glitch name strings and nukes the holding object.
+ */
 
 (() => {
-    let iframe = document.querySelector("iframe");
-    if (!iframe) {
-        iframe = document.createElement("iframe");
-        iframe.style.display = "none";
+    console.clear();
+    console.log("🛡️ HUNTING GLITCH STRINGS IN MEMORY...");
+
+    const glitchNames = [
+        "Lunch Break", "Ad Spam", "Error 37", "Night Time", "#LOL", 
+        "Jokester", "Slow Mo", "Dance Party", "Vortex", "Reverse", "Flip", "Micro"
+    ];
+
+    let foundCount = 0;
+    let visited = new Set();
+
+    // Helper to clear an object if it looks like glitch state
+    function clearState(obj, key) {
+        console.log(`%c🔥 FOUND GLITCH: "${obj[key]}" in key "${key}"`, "color: red; font-weight: bold;");
+        console.log("   Object:", obj);
+
+        // 1. Clear the specific string
+        obj[key] = ""; 
+
+        // 2. Clear common associated arrays if they exist nearby
+        if (Array.isArray(obj.ads)) obj.ads = [];
+        if (Array.isArray(obj.hazards)) obj.hazards = [];
+        if (typeof obj.lol === 'boolean') obj.lol = false;
+        if (typeof obj.night === 'boolean') obj.night = false;
+        if (typeof obj.joke === 'boolean') obj.joke = false;
+        if (typeof obj.slow === 'boolean') obj.slow = false;
+        if (typeof obj.dance === 'boolean') obj.dance = false;
+        if (typeof obj.color === 'string') obj.color = "";
+        
+        foundCount++;
+    }
+
+    function scanDeep(obj, depth = 0) {
+        if (!obj || typeof obj !== 'object' || depth > 10) return;
+        if (visited.has(obj)) return;
+        visited.add(obj);
+
+        // Check all keys in this object
+        for (const key in obj) {
+            const val = obj[key];
+
+            // 1. Match String Values
+            if (typeof val === 'string') {
+                // Check against all glitch names
+                for (const gName of glitchNames) {
+                    if (val === gName) {
+                        clearState(obj, key);
+                        // Don't return, keep scanning in case there are others
+                    }
+                }
+            }
+
+            // 2. Recurse
+            // Skip massive react internals to save time, but keep 'props' and 'state'
+            if (key.startsWith('_') && key !== '_owner') continue;
+            
+            if (typeof val === 'object') {
+                scanDeep(val, depth + 1);
+            }
+        }
+    }
+
+    // Start scan from React Root
+    const root = document.querySelector('#app') || document.body;
+    function traverseDOM(node) {
+        const k = Object.keys(node).find(key => key.startsWith('__reactFiber'));
+        if (k) {
+            const fiber = node[k];
+            // Scan Hooks (State)
+            if (fiber.memoizedState) scanDeep(fiber.memoizedState);
+            // Scan Props
+            if (fiber.memoizedProps) scanDeep(fiber.memoizedProps);
+        }
+        for (const child of node.children) traverseDOM(child);
+    }
+    traverseDOM(root);
+
+    if (foundCount > 0) {
+        let iframe = document.createElement('iframe');
         document.body.append(iframe);
-    }
-    /* By CryptoDude3 */
-    if (window.fetch.call.toString() == 'function call() { [native code] }') {
-        const call = window.fetch.call;
-        window.fetch.call = function () {
-            if (!arguments[1].includes("s.blooket.com/rc")) return call.apply(this, arguments);
-        }
-    }
-    const timeProcessed = 1730769906032;
-    let latestProcess = -1;
-    const cheat = (async () => {
-        let { stateNode } = Object.values((function react(r = document.querySelector("body>div")) { return Object.values(r)[1]?.children?.[0]?._owner.stateNode ? r : react(r.querySelector(":scope>div")) })())[1].children[0]._owner;
-        stateNode.setState({
-            bits: 0,
-            ads: [],
-            hazards: [],
-            color: "",
-            lol: false,
-            joke: false,
-            slow: false,
-            dance: false,
-            glitch: "",
-            glitcherName: "",
-            glitcherBlook: ""
-        });
-        clearTimeout(stateNode.adTimeout);
-        clearInterval(stateNode.hazardInterval);
-        clearTimeout(stateNode.nightTimeout);
-        clearTimeout(stateNode.glitchTimeout);
-        clearTimeout(stateNode.lolTimeout);
-        clearTimeout(stateNode.jokeTimeout);
-        clearTimeout(stateNode.slowTimeout);
-        clearTimeout(stateNode.danceTimeout);
-        clearTimeout(stateNode.nameTimeout);
-    });
-    let img = new Image;
-    img.src = "https://raw.githubusercontent.com/Blooket-Council/Blooket-Cheats/main/autoupdate/timestamps/factory/removeGlitches.png?" + Date.now();
-    img.crossOrigin = "Anonymous";
-    img.onload = function() {
-        const c = document.createElement("canvas");
-        const ctx = c.getContext("2d");
-        ctx.drawImage(img, 0, 0, this.width, this.height);
-        let { data } = ctx.getImageData(0, 0, this.width, this.height), decode = "", last;
-        let i = 0;
-        while (i < data.length) {
-            let char = String.fromCharCode(data[i % 4 == 3 ? (i++, i++) : i++] + data[i % 4 == 3 ? (i++, i++) : i++] * 256);
-            decode += char;
-            if (char == "/" && last == "*") break;
-            last = char;
-        }
-        let _, time = timeProcessed, error = "There was an error checking for script updates. Run cheat anyway?";
-        try {
-            [_, time, error] = decode.match(/LastUpdated: (.+?); ErrorMessage: "((.|\n)+?)"/);
-        } catch (e) {}
-        if ((latestProcess = parseInt(time)) <= timeProcessed || iframe.contentWindow.confirm(error)) cheat();
-    }
-    img.onerror = img.onabort = () => {
-        img.onerror = img.onabort = null;
-        cheat();
-        let iframe = document.querySelector("iframe");
-        iframe.contentWindow.alert("It seems the GitHub is either blocked or down.\n\nIf it's NOT blocked, join the Discord server for updates\nhttps://discord.gg/jHjGrrdXP6\n(The cheat will still run after this alert)")
+        iframe.contentWindow.alert(`✅ Found and cleared ${foundCount} glitch objects in memory!`);
+        iframe.remove();
+    } else {
+        alert("❌ No active glitch strings found in memory. \n(Wait until you actually have a glitch active, then run this!)");
     }
 })();
