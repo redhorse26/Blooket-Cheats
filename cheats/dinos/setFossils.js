@@ -22,60 +22,83 @@
 */
 /* THE UPDATE CHECKER IS ADDED DURING COMMIT PREP, THERE MAY BE REDUNDANT CODE, DO NOT TOUCH */
 
+/**
+ * @license AGPL-3.0
+ * Blooket Dino - Set Fossils/Score
+ * Finds the useState hook holding '235' and dispatches a new value.
+ */
+
 (() => {
-    let iframe = document.querySelector("iframe");
-    if (!iframe) {
-        iframe = document.createElement("iframe");
-        iframe.style.display = "none";
+    console.clear();
+    console.log("🦖 Dino: Setting Value...");
+
+    const TARGET_VAL = 235; // Confirm this is still 235
+    let foundHook = null;
+    let foundQueue = null;
+
+    // Helper to traverse Fiber Tree
+    const root = document.querySelector('#app') || document.body;
+    
+    function findTargetComponent(node) {
+        if (foundQueue) return; // Stop if found
+
+        // Scan Hooks list
+        let hook = node.memoizedState;
+        while(hook) {
+            // Check if this hook holds our target value directly
+            if (hook.memoizedState === TARGET_VAL) {
+                // Verify it has a queue (meaning it's a state hook we can update)
+                if (hook.queue && hook.queue.dispatch) {
+                    console.log(`%c🔥 FOUND STATE HOOK!`, "color: lime; font-weight: bold;");
+                    console.log("   Component:", node.type ? (node.type.name || node.type) : "Unknown");
+                    console.log("   Hook:", hook);
+                    
+                    foundHook = hook;
+                    foundQueue = hook.queue;
+                    return;
+                }
+            }
+            hook = hook.next;
+        }
+
+        // Recurse tree
+        if (node.child) findTargetComponent(node.child);
+        if (node.sibling) findTargetComponent(node.sibling);
+    }
+
+    // Start Search
+    const k = Object.keys(root).find(key => key.startsWith('__reactFiber'));
+    if (k) {
+        findTargetComponent(root[k]);
+    } else {
+        alert("❌ React Root not found.");
+        return;
+    }
+
+    if (foundQueue) {
+        // Prompt User
+        let iframe = document.createElement('iframe');
         document.body.append(iframe);
-    }
-    /* By CryptoDude3 */
-    if (window.fetch.call.toString() == 'function call() { [native code] }') {
-        const call = window.fetch.call;
-        window.fetch.call = function () {
-            if (!arguments[1].includes("s.blooket.com/rc")) return call.apply(this, arguments);
+        const input = iframe.contentWindow.prompt(`Current Value: ${TARGET_VAL}\n\nEnter New Value:`, "100000");
+        iframe.remove();
+
+        if (input) {
+            const newValue = parseFloat(input);
+            
+            // Dispatch the update!
+            // React dispatchers usually take an action: val => val
+            const dispatch = foundQueue.dispatch;
+            
+            try {
+                // We pass a function to ensure it treats it as a state update
+                dispatch(() => newValue);
+                alert(`✅ Set value to ${newValue}! \n(Perform an action in game to see it update visually)`);
+            } catch (e) {
+                console.error(e);
+                alert("❌ Error dispatching update.");
+            }
         }
-    }
-    const timeProcessed = 1730769904673;
-    let latestProcess = -1;
-    const cheat = (async () => {
-        let i = document.createElement('iframe');
-        document.body.append(i);
-        window.prompt = i.contentWindow.prompt.bind(window);
-        i.remove();
-        let fossils = parseInt(prompt("How many fossils would you like?")) || 0;
-        let { stateNode } = Object.values((function react(r = document.querySelector("body>div")) { return Object.values(r)[1]?.children?.[0]?._owner.stateNode ? r : react(r.querySelector(":scope>div")) })())[1].children[0]._owner;
-        stateNode.setState({ fossils });
-        stateNode.props.liveGameController.setVal({
-            path: `c/${stateNode.props.client.name}/f`,
-            val: fossils
-        });
-    });
-    let img = new Image;
-    img.src = "https://raw.githubusercontent.com/Blooket-Council/Blooket-Cheats/main/autoupdate/timestamps/dinos/setFossils.png?" + Date.now();
-    img.crossOrigin = "Anonymous";
-    img.onload = function() {
-        const c = document.createElement("canvas");
-        const ctx = c.getContext("2d");
-        ctx.drawImage(img, 0, 0, this.width, this.height);
-        let { data } = ctx.getImageData(0, 0, this.width, this.height), decode = "", last;
-        let i = 0;
-        while (i < data.length) {
-            let char = String.fromCharCode(data[i % 4 == 3 ? (i++, i++) : i++] + data[i % 4 == 3 ? (i++, i++) : i++] * 256);
-            decode += char;
-            if (char == "/" && last == "*") break;
-            last = char;
-        }
-        let _, time = timeProcessed, error = "There was an error checking for script updates. Run cheat anyway?";
-        try {
-            [_, time, error] = decode.match(/LastUpdated: (.+?); ErrorMessage: "((.|\n)+?)"/);
-        } catch (e) {}
-        if ((latestProcess = parseInt(time)) <= timeProcessed || iframe.contentWindow.confirm(error)) cheat();
-    }
-    img.onerror = img.onabort = () => {
-        img.onerror = img.onabort = null;
-        cheat();
-        let iframe = document.querySelector("iframe");
-        iframe.contentWindow.alert("It seems the GitHub is either blocked or down.\n\nIf it's NOT blocked, join the Discord server for updates\nhttps://discord.gg/jHjGrrdXP6\n(The cheat will still run after this alert)")
+    } else {
+        alert(`❌ Could not find the Hook holding value ${TARGET_VAL}. \nDid the value change?`);
     }
 })();
