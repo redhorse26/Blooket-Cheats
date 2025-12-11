@@ -17,54 +17,58 @@
  * 
  * Source: [https://github.com/redhorse26/Blooket-Cheats/tree/main/cheats](https://github.com/redhorse26/Blooket-Cheats/tree/main/cheats)
 */
-/* THE UPDATE CHECKER IS ADDED DURING COMMIT PREP, THERE MAY BE REDUNDANT CODE, DO NOT TOUCH */
-
-(() => {
-    let iframe = document.querySelector("iframe");
-    if (!iframe) {
-        iframe = document.createElement("iframe");
-        iframe.style.display = "none";
-        document.body.append(iframe);
-    }
-    /* By CryptoDude3 */
-    if (window.fetch.call.toString() == 'function call() { [native code] }') {
-        const call = window.fetch.call;
-        window.fetch.call = function () {
-            if (!arguments[1].includes("s.blooket.com/rc")) return call.apply(this, arguments);
+(() => { 
+    let iframe = document.createElement('iframe');
+    document.body.append(iframe);
+    window.alert = iframe.contentWindow.alert.bind(window);
+    iframe.remove();
+    
+    function withScene(callback) {
+        if (window._SCENE && window._SCENE.sys && window._SCENE.sys.isActive()) {
+            callback(window._SCENE);
+            return;
         }
+        let found = false;
+        const originalUpdate = window.Phaser.Scenes.SceneManager.prototype.update;
+        window.Phaser.Scenes.SceneManager.prototype.update = function(time, delta) {
+            originalUpdate.call(this, time, delta);
+            if (found) return;
+            for (const scene of this.scenes) {
+                if (scene.sys.isActive() && scene.sys.settings.key !== 'Boot') {
+                    window._SCENE = scene;
+                    found = true;
+                    window.Phaser.Scenes.SceneManager.prototype.update = originalUpdate;
+                    callback(scene);
+                    return;
+                }
+            }
+        };
     }
-    const timeProcessed = 1730769912916;
-    let latestProcess = -1;
-    const cheat = (async () => {
-        let { stateNode } = Object.values((function react(r = document.querySelector("body>div")) { return Object.values(r)[1]?.children?.[0]?._owner.stateNode ? r : react(r.querySelector(":scope>div")) })())[1].children[0]._owner;
-        stateNode.game.current.config.sceneConfig.enemyQueue.length = 0;
-        stateNode.game.current.config.sceneConfig.physics.world.bodies.entries.forEach(x => x?.gameObject?.receiveDamage?.(x.gameObject.hp, 1));
+    
+    withScene((scene) => {
+        const enemyService = scene.enemyService;
+        if (!enemyService) {
+            alert("Enemy Service not found!");
+            return;
+        }
+        
+        if (enemyService.enemyQueue) {
+            enemyService.enemyQueue.length = 0;
+            console.log("Cleared enemy queue");
+        }
+        
+        if (enemyService.enemies?.children?.entries) {
+            let killed = 0;
+            enemyService.enemies.children.entries.forEach(enemy => {
+                if (enemy && enemy.hp && enemy.takeDamage) {
+                    enemy.takeDamage(enemy.hp);
+                    killed++;
+                }
+            });
+            console.log(`Killed ${killed} enemies`);
+            alert(`Killed ${killed} enemies!`);
+        } else {
+            alert("No enemies found");
+        }
     });
-    let img = new Image;
-    img.src = "https://raw.githubusercontent.com/Blooket-Council/Blooket-Cheats/main/autoupdate/timestamps/tower-defense-2/removeEnemies.png?" + Date.now();
-    img.crossOrigin = "Anonymous";
-    img.onload = function() {
-        const c = document.createElement("canvas");
-        const ctx = c.getContext("2d");
-        ctx.drawImage(img, 0, 0, this.width, this.height);
-        let { data } = ctx.getImageData(0, 0, this.width, this.height), decode = "", last;
-        let i = 0;
-        while (i < data.length) {
-            let char = String.fromCharCode(data[i % 4 == 3 ? (i++, i++) : i++] + data[i % 4 == 3 ? (i++, i++) : i++] * 256);
-            decode += char;
-            if (char == "/" && last == "*") break;
-            last = char;
-        }
-        let _, time = timeProcessed, error = "There was an error checking for script updates. Run cheat anyway?";
-        try {
-            [_, time, error] = decode.match(/LastUpdated: (.+?); ErrorMessage: "((.|\n)+?)"/);
-        } catch (e) {}
-        if ((latestProcess = parseInt(time)) <= timeProcessed || iframe.contentWindow.confirm(error)) cheat();
-    }
-    img.onerror = img.onabort = () => {
-        img.onerror = img.onabort = null;
-        cheat();
-        let iframe = document.querySelector("iframe");
-        iframe.contentWindow.alert("It seems the GitHub is either blocked or down.\n\nIf it's NOT blocked, join the Discord server for updates\nhttps://discord.gg/jHjGrrdXP6\n(The cheat will still run after this alert)")
-    }
 })();
