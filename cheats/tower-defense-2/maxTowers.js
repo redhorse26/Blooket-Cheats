@@ -77,11 +77,11 @@
 
                 // 2. Update Stats Object (The important part!)
                 if (tower.stats) {
-                    tower.stats.dmg = 1e+299;      // Massive Damage
-                    tower.stats.range = 1e+299;       // Map-wide Range
-                    tower.stats.fireRate = 1e+299;      // Ultra Fast
+                    tower.stats.dmg = 1e+10;      // Massive Damage
+                    tower.stats.range = 1e+10;       // Map-wide Range
+                    tower.stats.fireRate = 1e+10;      // Ultra Fast
                     tower.stats.ghostDetect = true; // Hit Ghosts
-                    tower.stats.maxTargets = 1e+299;  // Hit everything at once
+                    tower.stats.maxTargets = 1e+10;  // Hit everything at once
                     
                     // Multi-projectile towers
                     if (tower.stats.numProjectiles) {
