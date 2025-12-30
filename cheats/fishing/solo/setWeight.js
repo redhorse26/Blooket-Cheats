@@ -20,12 +20,15 @@
  * Source of original work: [https://github.com/Blooket-Council/Blooket-Cheats/tree/main](https://github.com/Blooket-Council/Blooket-Cheats/tree/main)
  * Source of this modified work: [https://github.com/redhorse26/Blooket-Cheats/tree/main/cheats](https://github.com/redhorse26/Blooket-Cheats/tree/main/cheats)
 */
-/**
- * 🎣 FISHING FRENZY: PERMANENT WEIGHT HACK
- * Targets Hook [2] on the 'iw' component to bypass the visual-only bug.
- */
 (() => {
-    const NEW_WEIGHT = 1000000; // Set your desired weight here
+
+    let iframe = document.createElement('iframe');
+    document.body.append(iframe);
+    const input = iframe.contentWindow.prompt("Enter your desired weight:", "1000000");
+    iframe.remove();
+
+    if (!input) return;
+    const NEW_WEIGHT = parseFloat(input);
 
     const root = document.querySelector('#app') || document.body;
     const rKey = Object.keys(root).find(k => k.startsWith('__reactFiber'));
@@ -36,24 +39,16 @@
     function findAndSet(node) {
         if (success || !node) return;
 
-        // Target the 'iw' node or any node with Hook [2] managing weight
         if (node.memoizedState) {
             let hook = node.memoizedState;
             let i = 0;
             while (hook) {
-                // We are targeting Hook #2 specifically
-                if (i === 2 && hook.queue && hook.queue.dispatch) {
+
+                if (i === 2 && hook.queue?.dispatch) {
                     const currentVal = hook.memoizedState;
-                    
-                    // Verify it's a number (weight) and not a string like 'Game'
+
                     if (typeof currentVal === 'number') {
-                        console.log(`%c🎯 TARGET HOOK FOUND!`, "color: lime; font-weight: bold;");
-                        console.log(`   Current Weight: ${currentVal}`);
-                        
-                        // Use the React Dispatcher to set the state permanently
                         hook.queue.dispatch(NEW_WEIGHT);
-                        
-                        console.log(`%c✅ SUCCESS! Weight set to ${NEW_WEIGHT}`, "color: #00ffff; font-weight: bold;");
                         success = true;
                         return;
                     }
@@ -62,16 +57,16 @@
                 i++;
             }
         }
-
         findAndSet(node.child);
         findAndSet(node.sibling);
     }
 
     findAndSet(root[rKey]);
 
-    if (!success) {
-        alert("❌ Could not find the Weight Hook. \nMake sure you have caught at least one fish first!");
+    if (success) {
+        alert(`✅ Weight set to ${NEW_WEIGHT.toLocaleString()}!\n\nCatch a fish to update the UI.`);
     } else {
-        alert(`✅ Weight set to ${NEW_WEIGHT}!\n\nJust catch one more fish to see the UI update.`);
+        alert("❌ Could not find Weight Hook. Catch one fish first!");
     }
 })();
+
