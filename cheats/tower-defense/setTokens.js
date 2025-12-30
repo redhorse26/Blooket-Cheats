@@ -17,43 +17,30 @@
  * 
  * Source: [https://github.com/redhorse26/Blooket-Cheats/tree/main/cheats](https://github.com/redhorse26/Blooket-Cheats/tree/main/cheats)
 */
+
 (() => {
-    let iframe = document.createElement('iframe');
-    document.body.append(iframe);
-    window.prompt = iframe.contentWindow.prompt.bind(window);
-    iframe.remove();
-    
-    function searchDOM(element = document.body, depth = 0) {
-        if (depth > 5) return null;
-        const keys = Object.keys(element);
-        const reactKey = keys.find(k => k.includes('react'));
-        if (reactKey) {
-            try {
-                let fiber = element[reactKey];
-                while (fiber) {
-                    if (fiber._owner && fiber._owner.stateNode && fiber._owner.stateNode.state) {
-                        const state = fiber._owner.stateNode.state;
-                        if (state.round !== undefined) return fiber._owner.stateNode;
-                    }
-                    if (fiber.stateNode && fiber.stateNode.state) {
-                        const state = fiber.stateNode.state;
-                        if (state.round !== undefined) return fiber.stateNode;
-                    }
-                    fiber = fiber.return;
-                }
-            } catch (e) {}
+    function getComp(element = document.body, depth = 0) {
+        if (depth > 20) return null;
+        const fiber = element[Object.keys(element).find(k => k.includes('react'))];
+        if (fiber) {
+            let curr = fiber;
+            while (curr) {
+                const sn = curr.stateNode || curr._owner?.stateNode;
+                if (sn?.state?.tokens !== undefined) return sn;
+                curr = curr.return;
+            }
         }
         for (const child of element.children) {
-            const result = searchDOM(child, depth + 1);
+            const result = getComp(child, depth + 1);
             if (result) return result;
         }
-        return null;
     }
-    
-    const comp = searchDOM();
-    if (!comp) { alert("❌ Component not found!"); return; }
-    
-    const round = parseInt(prompt("What round do you want to set to?")) || 0;
-    comp.setState({ round });
-    alert(`✅ Round set to ${round}!`);
+    const sn = getComp();
+    if (!sn) return;
+    let iframe = document.createElement('iframe');
+    document.body.append(iframe);
+    const input = iframe.contentWindow.prompt("Enter new Token amount:", sn.state.tokens);
+    iframe.remove();
+    if (input) sn.setState({ tokens: parseInt(input) });
 })();
+
