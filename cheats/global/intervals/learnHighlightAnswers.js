@@ -20,9 +20,10 @@
 (() => {
     console.log("🎨 Highlight Answers Active (Green = Correct, Red = Wrong)\n");
     
-    const answerDatabase = {};
+    if (!window.answerDatabase) {
+        window.answerDatabase = {};
+    }
 
-    // 1. AUTOMATICALLY SKIP FEEDBACK
     function autoContinue() {
         const feedbackContainer = document.querySelector('[class*="feedbackContainer"]');
         const feedbackText = document.querySelector('[class*="feedbackText"]');
@@ -48,7 +49,6 @@
         }
     }
 
-    // 2. LEARN ANSWERS (Same robust logic as before)
     function learn() {
         const wrappers = document.querySelectorAll('[class*="questionWrapper"]');
         
@@ -56,9 +56,14 @@
             const questionTextEl = wrapper.querySelector('[class*="questionText"]');
             if (!questionTextEl) return;
 
-            const question = questionTextEl.textContent.trim();
+            let questionMedia = wrapper.querySelector('[class*="questionImage"]');
+            let qMediaSrc = questionMedia ? questionMedia.src : "none";
 
-            // MC Check
+            let questionMath = wrapper.querySelector('[class*="mq-selectable"]');
+            let qMathText = questionMath ? questionMath.innerText.trim() : "none";
+
+            const question = questionTextEl.textContent.trim() + " " + qMediaSrc + " " + qMathText;
+
             const correctBtn = Array.from(wrapper.querySelectorAll('[class*="answerButton"]')).find(btn => 
                 btn.innerHTML.includes('fa-check') || 
                 (btn.style.backgroundColor && btn.style.backgroundColor.includes('rgb(139, 220, 111)')) ||
@@ -66,17 +71,17 @@
             );
 
             if (correctBtn) {
-                const answerTextEl = correctBtn.querySelector('[class*="answerText"]');
-                if (answerTextEl) {
-                    const answer = answerTextEl.textContent.trim();
-                    if (!answerDatabase[question]) {
-                        answerDatabase[question] = [answer];
-                        console.log(`✓ Learned: "${question}" → "${answer}"`);
-                    }
+                const textEl = correctBtn.querySelector('[class*="answerText"]');
+                const mathEl = correctBtn.querySelector('[class*="mq-selectable"]');
+
+                const answer = textEl ? textEl.textContent.trim() : (mathEl ? mathEl.innerText.trim() : null);
+
+                if (answer && !window.answerDatabase[question]) {
+                    window.answerDatabase[question] = [answer];
+                    console.log(`✓ Learned (MC): "${question}" → "${answer}"`);
                 }
             }
 
-            // Typing Check
             const rawTypingEls = Array.from(wrapper.querySelectorAll('[class*="typingFeedbackAnswer"]'));
             const realTypingAnswers = rawTypingEls.filter(el => {
                 const cls = el.getAttribute('class') || "";
@@ -85,73 +90,68 @@
 
             if (realTypingAnswers.length > 0) {
                 const answer = realTypingAnswers[0].textContent.trim();
-                if (!answerDatabase[question]) {
-                    answerDatabase[question] = [answer];
-                    console.log(`✓ Learned: "${question}" → "${answer}"`);
+                if (!window.answerDatabase[question]) {
+                    window.answerDatabase[question] = [answer];
+                    console.log(`✓ Learned (Typing): "${question}" → "${answer}"`);
                 }
             }
         });
     }
 
-    // 3. HIGHLIGHT CORRECT ANSWER
     function highlight() {
         const wrappers = document.querySelectorAll('[class*="questionWrapper"]');
         if (wrappers.length === 0) return;
 
-        // Active question is last wrapper
         const activeWrapper = wrappers[wrappers.length - 1];
         
-        // Don't highlight during feedback/slideOut
         if (activeWrapper.className.includes('slideOut')) return;
 
         const questionTextEl = activeWrapper.querySelector('[class*="questionText"]');
         if (!questionTextEl) return;
 
-        const question = questionTextEl.textContent.trim();
+        let questionMedia = activeWrapper.querySelector('[class*="questionImage"]');
+        let qMediaSrc = questionMedia ? questionMedia.src : "none";
+        let questionMath = activeWrapper.querySelector('[class*="mq-selectable"]');
+        let qMathText = questionMath ? questionMath.innerText.trim() : "none";
 
-        if (answerDatabase[question]) {
-            const knownAnswer = answerDatabase[question][0];
+        const question = questionTextEl.textContent.trim() + " " + qMediaSrc + " " + qMathText;
 
-            // --- MC HIGHLIGHTING ---
+        if (window.answerDatabase[question]) {
+            const knownAnswer = window.answerDatabase[question][0];
+
             const buttons = activeWrapper.querySelectorAll('[class*="answerButton"]');
             if (buttons.length > 0) {
                 buttons.forEach(btn => {
                     const textEl = btn.querySelector('[class*="answerText"]');
-                    if (!textEl) return;
-
-                    const text = textEl.textContent.trim();
+                    const mathEl = btn.querySelector('[class*="mq-selectable"]');
+                    const btnText = textEl ? textEl.textContent.trim() : (mathEl ? mathEl.innerText.trim() : "");
+                    
                     const front = btn.querySelector('[class*="answerFront"]');
                     const back = btn.querySelector('[class*="answerBack"]');
                     
-                    // Define Colors
-                    const correctColor = '#00ff00'; // Lime Green
-                    const wrongColor = '#ff0000';   // Red
+                    const correctColor = '#00ff00';
+                    const wrongColor = '#ff0000';
 
-                    if (text === knownAnswer) {
-                        // Make Correct GREEN
+                    if (btnText === knownAnswer) {
                         if (front) {
                             front.style.backgroundColor = correctColor;
-                            front.style.color = 'black'; // Ensure text is readable
+                            front.style.color = 'black';
                         }
-                        if (back) back.style.backgroundColor = '#00cc00'; // Darker green for 3D effect
-                    } else {
-                        // Make Wrong RED
+                        if (back) back.style.backgroundColor = '#00cc00';
+                    } else if (btnText) {
                         if (front) {
                             front.style.backgroundColor = wrongColor;
-                            front.style.opacity = '0.7'; // Dim it slightly
+                            front.style.opacity = '0.7';
                         }
                         if (back) back.style.backgroundColor = '#cc0000';
                     }
                 });
             }
 
-            // --- TYPING HIGHLIGHTING ---
             const input = activeWrapper.querySelector('input[class*="typingAnswerInput"]');
             if (input) {
-                // 1. Change Placeholder
                 input.setAttribute('placeholder', `ANSWER: ${knownAnswer}`);
                 
-                // 2. Change Subheader Text (Usually says "not case sensitive")
                 const subHeader = activeWrapper.querySelector('[class*="typingAnswerSubheader"]');
                 if (subHeader) {
                     subHeader.textContent = `ANSWER: ${knownAnswer}`;
@@ -163,12 +163,11 @@
         }
     }
 
-    // Loop
     setInterval(() => {
         autoContinue();
         learn();
         highlight();
-    }, 100); // 100ms is plenty for visual updates
+    }, 100);
 
     console.log("✅ Highlighting Active. Play manually to populate database.");
 })();
