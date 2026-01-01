@@ -1,5 +1,5 @@
 (() => {
-    console.log("🧠 Learn Auto Answer v3.1 (Fixed Math Trimming)\n");
+    console.log("🧠 Learn Auto Answer v3.1\n");
 
     const answerDatabase = {};
 
