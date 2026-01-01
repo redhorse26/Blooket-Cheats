@@ -85,7 +85,8 @@
         const questionTextEl = activeWrapper.querySelector('[class*="questionText"]');
         if (!questionTextEl) return;
         const questionMedia = activeWrapper.querySelector('[class*="questionImage"]');
-        const question = questionTextEl.textContent.trim()+questionMedia.src;
+        if (!questionMedia) questionMedia = "none";
+        const question = questionTextEl.textContent.trim()+" "+questionMedia.src;
 
         if (answerDatabase[question]) {
             const knownAnswer = answerDatabase[question][0];
