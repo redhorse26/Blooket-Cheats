@@ -18,9 +18,11 @@
  * Source: [https://github.com/redhorse26/Blooket-Cheats/tree/main/cheats](https://github.com/redhorse26/Blooket-Cheats/tree/main/cheats)
 */
 (() => {
-    console.log("🧠 Learn Auto Answer v3.1\n");
+    console.log("🧠 Learn Auto Answer v3.3\n");
 
-    const answerDatabase = {};
+    if (!window.answerDatabase) {
+        window.answerDatabase = {};
+    }
 
     function autoContinue() {
         const feedbackContainer = document.querySelector('[class*="feedbackContainer"]');
@@ -65,8 +67,8 @@
 
                 const answer = textEl ? textEl.textContent.trim() : (mathEl ? mathEl.innerText.trim() : null);
 
-                if (answer && !answerDatabase[question]) {
-                    answerDatabase[question] = [answer];
+                if (answer && !window.answerDatabase[question]) {
+                    window.answerDatabase[question] = [answer];
                     console.log(`✓ Learned (MC): "${question}" → "${answer}"`);
                 }
             }
@@ -79,8 +81,8 @@
 
             if (realTypingAnswers.length > 0) {
                 const answer = realTypingAnswers[0].textContent.trim();
-                if (!answerDatabase[question]) {
-                    answerDatabase[question] = [answer];
+                if (!window.answerDatabase[question]) {
+                    window.answerDatabase[question] = [answer];
                     console.log(`✓ Learned (Typing): "${question}" → "${answer}"`);
                 }
             }
@@ -102,8 +104,8 @@
 
         const question = questionTextEl.textContent.trim() + " " + qMediaSrc + " " + qMathText;
 
-        if (answerDatabase[question]) {
-            const knownAnswer = answerDatabase[question][0];
+        if (window.answerDatabase[question]) {
+            const knownAnswer = window.answerDatabase[question][0];
 
             const buttons = activeWrapper.querySelectorAll('[class*="answerButton"]');
             for (const btn of buttons) {
@@ -145,4 +147,3 @@
 
     console.log("✅ Script Active.");
 })();
-
