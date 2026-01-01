@@ -34,7 +34,7 @@
         wrappers.forEach(wrapper => {
             const questionTextEl = wrapper.querySelector('[class*="questionText"]');
             if (!questionTextEl) return;
-            const questionMedia = wrapper.querySelector('[class*="questionImage"]');
+            let questionMedia = wrapper.querySelector('[class*="questionImage"]');
             if (!questionMedia) questionMedia = "none";
             const question = questionTextEl.textContent.trim()+ " " + questionMedia.src;
 
@@ -84,7 +84,7 @@
 
         const questionTextEl = activeWrapper.querySelector('[class*="questionText"]');
         if (!questionTextEl) return;
-        const questionMedia = activeWrapper.querySelector('[class*="questionImage"]');
+        let questionMedia = activeWrapper.querySelector('[class*="questionImage"]');
         if (!questionMedia) questionMedia = "none";
         const question = questionTextEl.textContent.trim()+" "+questionMedia.src;
 
