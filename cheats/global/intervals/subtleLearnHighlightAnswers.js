@@ -21,11 +21,23 @@
  * Source of this modified work: [https://github.com/redhorse26/Blooket-Cheats/tree/main/cheats](https://github.com/redhorse26/Blooket-Cheats/tree/main/cheats)
 */
 (() => {
-    console.log("🕵️ Subtle Highlight Active (Flat Button = Correct)\n");
+    console.log("🕵️ Subtle Highlight Active (Lighter Shadow = Correct)\n");
     
-    const answerDatabase = {};
+    if (!window.answerDatabase) {
+        window.answerDatabase = {};
+    }
 
-    // 1. AUTOMATICALLY SKIP FEEDBACK
+    function lightenColor(color) {
+        const rgb = color.match(/\d+/g);
+        if (!rgb) return color;
+        
+        const r = Math.round(parseInt(rgb[0]) + (255 - parseInt(rgb[0])) * 0.1);
+        const g = Math.round(parseInt(rgb[1]) + (255 - parseInt(rgb[1])) * 0.1);
+        const b = Math.round(parseInt(rgb[2]) + (255 - parseInt(rgb[2])) * 0.1);
+        
+        return `rgb(${r}, ${g}, ${b})`;
+    }
+
     function autoContinue() {
         const feedbackContainer = document.querySelector('[class*="feedbackContainer"]');
         const feedbackText = document.querySelector('[class*="feedbackText"]');
@@ -51,7 +63,6 @@
         }
     }
 
-    // 2. LEARN ANSWERS
     function learn() {
         const wrappers = document.querySelectorAll('[class*="questionWrapper"]');
         
@@ -59,9 +70,14 @@
             const questionTextEl = wrapper.querySelector('[class*="questionText"]');
             if (!questionTextEl) return;
 
-            const question = questionTextEl.textContent.trim();
+            let questionMedia = wrapper.querySelector('[class*="questionImage"]');
+            let qMediaSrc = questionMedia ? questionMedia.src : "none";
 
-            // MC Check
+            let questionMath = wrapper.querySelector('[class*="mq-selectable"]');
+            let qMathText = questionMath ? questionMath.innerText.trim() : "none";
+
+            const question = questionTextEl.textContent.trim() + " " + qMediaSrc + " " + qMathText;
+
             const correctBtn = Array.from(wrapper.querySelectorAll('[class*="answerButton"]')).find(btn => 
                 btn.innerHTML.includes('fa-check') || 
                 (btn.style.backgroundColor && btn.style.backgroundColor.includes('rgb(139, 220, 111)')) ||
@@ -69,17 +85,17 @@
             );
 
             if (correctBtn) {
-                const answerTextEl = correctBtn.querySelector('[class*="answerText"]');
-                if (answerTextEl) {
-                    const answer = answerTextEl.textContent.trim();
-                    if (!answerDatabase[question]) {
-                        answerDatabase[question] = [answer];
-                        console.log(`✓ Learned: "${question}" → "${answer}"`);
-                    }
+                const textEl = correctBtn.querySelector('[class*="answerText"]');
+                const mathEl = correctBtn.querySelector('[class*="mq-selectable"]');
+
+                const answer = textEl ? textEl.textContent.trim() : (mathEl ? mathEl.innerText.trim() : null);
+
+                if (answer && !window.answerDatabase[question]) {
+                    window.answerDatabase[question] = [answer];
+                    console.log(`✓ Learned: "${question}" → "${answer}"`);
                 }
             }
 
-            // Typing Check
             const rawTypingEls = Array.from(wrapper.querySelectorAll('[class*="typingFeedbackAnswer"]'));
             const realTypingAnswers = rawTypingEls.filter(el => {
                 const cls = el.getAttribute('class') || "";
@@ -88,15 +104,14 @@
 
             if (realTypingAnswers.length > 0) {
                 const answer = realTypingAnswers[0].textContent.trim();
-                if (!answerDatabase[question]) {
-                    answerDatabase[question] = [answer];
+                if (!window.answerDatabase[question]) {
+                    window.answerDatabase[question] = [answer];
                     console.log(`✓ Learned: "${question}" → "${answer}"`);
                 }
             }
         });
     }
 
-    // 3. SUBTLE HIGHLIGHT
     function highlight() {
         const wrappers = document.querySelectorAll('[class*="questionWrapper"]');
         if (wrappers.length === 0) return;
@@ -107,35 +122,32 @@
         const questionTextEl = activeWrapper.querySelector('[class*="questionText"]');
         if (!questionTextEl) return;
 
-        const question = questionTextEl.textContent.trim();
+        let questionMedia = activeWrapper.querySelector('[class*="questionImage"]');
+        let qMediaSrc = questionMedia ? questionMedia.src : "none";
+        let questionMath = activeWrapper.querySelector('[class*="mq-selectable"]');
+        let qMathText = questionMath ? questionMath.innerText.trim() : "none";
 
-        if (answerDatabase[question]) {
-            const knownAnswer = answerDatabase[question][0];
+        const question = questionTextEl.textContent.trim() + " " + qMediaSrc + " " + qMathText;
 
-            // --- MC: REMOVE SHADOW FROM CORRECT ANSWER ---
+        if (window.answerDatabase[question]) {
+            const knownAnswer = window.answerDatabase[question][0];
+
             const buttons = activeWrapper.querySelectorAll('[class*="answerButton"]');
             if (buttons.length > 0) {
                 buttons.forEach(btn => {
                     const textEl = btn.querySelector('[class*="answerText"]');
-                    if (!textEl) return;
-
-                    const text = textEl.textContent.trim();
+                    const mathEl = btn.querySelector('[class*="mq-selectable"]');
+                    const btnText = textEl ? textEl.textContent.trim() : (mathEl ? mathEl.innerText.trim() : "");
+                    
                     const back = btn.querySelector('[class*="answerBack"]');
                     
-                    if (back) {
-                        if (text === knownAnswer) {
-                            // Correct Answer: Hide Shadow (make it "flat")
-                            back.style.display = 'none'; 
-                            // Or alternatively: back.style.opacity = '0';
-                        } else {
-                            // Wrong Answer: Ensure Shadow is visible (reset)
-                            back.style.display = ''; 
-                        }
+                    if (back && btnText === knownAnswer) {
+                        const currentColor = window.getComputedStyle(back).backgroundColor;
+                        back.style.backgroundColor = lightenColor(currentColor);
                     }
                 });
             }
 
-            // --- TYPING: CHANGE PLACEHOLDER ONLY ---
             const input = activeWrapper.querySelector('input[class*="typingAnswerInput"]');
             if (input) {
                 input.setAttribute('placeholder', knownAnswer);
