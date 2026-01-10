@@ -22,67 +22,79 @@
 */
 /* THE UPDATE CHECKER IS ADDED DURING COMMIT PREP, THERE MAY BE REDUNDANT CODE, DO NOT TOUCH */
 
-(() => {
-    let iframe = document.querySelector("iframe");
-    if (!iframe) {
-        iframe = document.createElement("iframe");
-        iframe.style.display = "none";
-        document.body.append(iframe);
-    }
-    /* By CryptoDude3 */
-    if (window.fetch.call.toString() == 'function call() { [native code] }') {
-        const call = window.fetch.call;
-        window.fetch.call = function () {
-            if (!arguments[1].includes("s.blooket.com/rc")) return call.apply(this, arguments);
+async function sellBlook(blookName, quantity) {
+    const formData = new FormData();
+    formData.append('1_blook', blookName);
+    formData.append('1_quantity', quantity.toString());
+    formData.append('0', '[{"status":"UNSET","message":"","fieldErrors":{}},"$K1"]');
+
+    try {
+        const response = await fetch('https://dashboard.blooket.com/blooks', {
+            method: 'POST',
+            headers: {
+                'next-action': '504d5bfe3d4b01def79630a2138ec4f50f85bee9',
+                'accept': 'text/x-component',
+                'next-router-state-tree': '%5B%22%22%2C%7B%22children%22%3A%5B%22(routes)%22%2C%7B%22children%22%3A%5B%22(dashboard)%22%2C%7B%22children%22%3A%5B%22blooks%22%2C%7B%22children%22%3A%5B%22__PAGE__%22%2C%7B%7D%2Cnull%2Cnull%5D%7D%2Cnull%2Cnull%5D%7D%2Cnull%2Cnull%5D%7D%2Cnull%2Cnull%5D%7D%2Cnull%2Cnull%2Ctrue%5D'
+            },
+            body: formData
+        });
+
+        if (response.ok) {
+            console.log(`Successfully sold ${quantity}x ${blookName}`);
+        } else {
+            console.error(`Failed to sell ${blookName}: ${response.status}`);
         }
+    } catch (err) {
+        console.error("Network error during sale:", err);
     }
-    const timeProcessed = 1730769907938;
-    let latestProcess = -1;
-    const cheat = (async () => {
-        let i = document.createElement('iframe');
-        document.body.append(i);
-        window.alert = i.contentWindow.alert.bind(window);
-        window.confirm = i.contentWindow.confirm.bind(window);
-        i.remove();
-        if (window.location.pathname.startsWith("/blooks")) {
-            if (confirm(`Are you sure you want to sell your dupes? (Legendaries and rarer will not be sold)`)) {
-                let { stateNode } = Object.values((function react(r = document.querySelector("body>div")) { return Object.values(r)[1]?.children?.[0]?._owner.stateNode ? r : react(r.querySelector(":scope>div")) })())[1].children[0]._owner;
-                let now = Date.now(), results = "";
-                for (const blook in stateNode.state.blookData) if (stateNode.state.blookData[blook] > 1) {
-                    stateNode.setState({ blook, numToSell: stateNode.state.blookData[blook] - 1 });
-                    if (!["Uncommon", "Rare", "Epic"].includes(document.querySelector("[class*='highlightedRarity']").innerText.trim())) continue;
-                    results += `    ${blook} ${stateNode.state.blookData[blook] - 1}\n`;
-                    await stateNode.sellBlook({ preventDefault: () => {} }, true);
-                }
-                alert(`(${Date.now() - now}ms) Results:\n${results.trim()}`);
-            }
-        } else alert("This can only be ran in the Blooks page.");
+}
+window.blookslist = (() => {
+    const anyEl = document.querySelector('*');
+    const fiberKey = Object.keys(anyEl).find(k => k.startsWith('__reactFiber$'));
+    let fiber = anyEl[fiberKey];
+    while (fiber && fiber.return) {
+        fiber = fiber.return;
+    }
+    const path = "child.child.child.child.child.child.child.child.child.child.sibling.child.child.child.child.child.child.child.child.sibling.child.child.sibling.child.child.child.child.sibling.child.sibling.child.child.child.child.child.child.child.child.child.child.child.child.child.child.child.child.child.child.child.child.child.child.child.child.child.child.child.child.child.sibling.child.sibling.sibling.sibling.sibling.child.child.child.child.child.child.child.child.child.child.child.child.child.child.child.child.child.child.child.child.child.child.child.child.child.child.child.sibling.child.child";
+    let target = fiber;
+    path.split('.').forEach(key => {
+        target = target ? target[key] : null;
     });
-    let img = new Image;
-    img.src = "https://raw.githubusercontent.com/Blooket-Council/Blooket-Cheats/main/autoupdate/timestamps/global/sellDuplicateBlooks.png?" + Date.now();
-    img.crossOrigin = "Anonymous";
-    img.onload = function() {
-        const c = document.createElement("canvas");
-        const ctx = c.getContext("2d");
-        ctx.drawImage(img, 0, 0, this.width, this.height);
-        let { data } = ctx.getImageData(0, 0, this.width, this.height), decode = "", last;
-        let i = 0;
-        while (i < data.length) {
-            let char = String.fromCharCode(data[i % 4 == 3 ? (i++, i++) : i++] + data[i % 4 == 3 ? (i++, i++) : i++] * 256);
-            decode += char;
-            if (char == "/" && last == "*") break;
-            last = char;
-        }
-        let _, time = timeProcessed, error = "There was an error checking for script updates. Run cheat anyway?";
-        try {
-            [_, time, error] = decode.match(/LastUpdated: (.+?); ErrorMessage: "((.|\n)+?)"/);
-        } catch (e) {}
-        if ((latestProcess = parseInt(time)) <= timeProcessed || iframe.contentWindow.confirm(error)) cheat();
-    }
-    img.onerror = img.onabort = () => {
-        img.onerror = img.onabort = null;
-        cheat();
-        let iframe = document.querySelector("iframe");
-        iframe.contentWindow.alert("It seems the GitHub is either blocked or down.\n\nIf it's NOT blocked, join the Discord server for updates\nhttps://discord.gg/jHjGrrdXP6\n(The cheat will still run after this alert)")
-    }
+    return target?.memoizedProps?.blooks;
 })();
+let key = "konzpack",
+    propCall = Object.prototype.hasOwnProperty.call;
+let webpack = webpackChunk_N_E.push([
+    [key],
+    { [key]: () => {} },
+    function (func) {
+        Object.prototype.hasOwnProperty.call = function () {
+            Object.defineProperty(arguments[0], key, { set: () => {}, configurable: true });
+            return (Object.prototype.hasOwnProperty.call = propCall).apply(this, arguments);
+        };
+        return func;
+    },
+]);
+const blookData = webpack(4927).nK;
+prices = {
+    Uncommon: 5,
+    Rare: 20,
+    Epic: 75,
+    Legendary: 200,
+    Chroma: 300,
+    Unique: 350,
+    Mystical: 1000,
+};
+let sellAmt = 0;
+let sellBlookAmt = 0;
+for (let blook of blookslist) {
+    console.log(blook);
+    rarity = blookData[blook.blook].rarity;
+    console.log(rarity);
+    if (blook.quantity > 1 && ["Uncommon","Rare","Epic"].includes(rarity)){
+        sellBlook(blook.blook,blook.quantity - 1);
+        sellBlookAmt+=blook.quantity - 1;
+        sellAmt+=prices[rarity];
+    }
+}
+alert("Sold " + sellBlookAmt + " blooks for " + sellAmt + " Tokens.");
